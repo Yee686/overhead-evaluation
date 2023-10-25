@@ -7,6 +7,10 @@
 #include <thread>
 #include <string.h>
 
+#include <unistd.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+
 #define PAGE_SIZE 4096
 thread_local int worker_id = -1;
 static const uint64_t pool_size_set = (uint64_t)16 * 1024 * 1024 * 1024;
@@ -58,12 +62,16 @@ public:
     char *m_buf;
     size_t m_pool_size;
 
+    int fd;
+
 public:
     CLThreadPMPool(){
         m_pools = nullptr;
         m_buf = nullptr;
         m_pool_size = 0;
         m_thread_num = 0;
+
+        fd = -1;
     }
 
     void initialize(size_t pool_size, int threadNum){
@@ -72,14 +80,25 @@ public:
         m_pools = new CLMemPool[threadNum];
         size_t sizeOfPool = (pool_size/(threadNum+threadNum-2)/PAGE_SIZE)*PAGE_SIZE;
         m_pool_size = sizeOfPool*(threadNum+threadNum-2);
-        
-        void* tmp_buf;
-        int resAlloc = posix_memalign(&tmp_buf,64,m_pool_size);
-        if(resAlloc){
-            perror(nullptr);
-            exit(-1);
+
+        fd = open("/usr/yzy/overhead-evaluation/pmem", O_RDWR | O_CREAT);
+        if(fd == -1)
+        {
+            perror("error open file for pmem!");
+            return;
         }
-        m_buf = (char*)tmp_buf;
+
+        // 将文件映射到内存
+        void* tmp_buf = mmap(nullptr, m_pool_size, PROT_READ | PROT_WRITE , MAP_SHARED, fd, 0);
+				
+        if(tmp_buf == MAP_FAILED)
+        {
+            close(fd);
+            perror("error mmap for pmem!");
+            return;
+        }
+
+        m_buf = (char *)tmp_buf;        
 
         m_pools[0].initialize(m_buf, sizeOfPool*(threadNum-1));
         for (int i = 1; i < threadNum; i++)
@@ -87,7 +106,11 @@ public:
     }
 
     ~CLThreadPMPool(){
-        free(m_buf);
+        munmap(m_buf, m_pool_size);
+        
+        close(fd);
+        fd = -1;
+
         m_buf = nullptr;
         m_pool_size = 0;
         m_thread_num = 0;
@@ -108,7 +131,15 @@ void closeMemoryPool(){
 }
 
 inline void persist(char *addr, int len){
-
+    // 刷入SSD
+    char* aligned_addr = (char*)(~((uintptr_t)0xFFF) & (uintptr_t)addr);
+    if(msync(aligned_addr, PAGE_SIZE, MS_SYNC) == -1)
+    {
+        perror("error msync for pmem!");
+        return;
+    }
+    else
+        std::cout << "msync success!" << std::endl;
 }
 
 void *alloc(size_t size) {

@@ -1,7 +1,7 @@
 #include "utree.h"
 
-#define NR_LOAD         64000000
-#define NR_OPERATIONS   64000000
+#define NR_LOAD         10000 //64000000
+#define NR_OPERATIONS   10000 //64000000
 #define LOAD_YCSB      "insert1_zipfian_64M_load.dat"     
 #define RUN_YCSB       "insert1_zipfian_64M_run.dat"
 
@@ -11,6 +11,8 @@ uint64_t *loadKeys, *runKeys, *runTypes;
 void loadWorkLoad();
 
 int main(int argc, char **argv){
+    for(int i = 0; i <argc; i++)
+        std::cout <<"arg "<<i<<" "<<argv[i] << std::endl;
     int threadNum = atoi(argv[1]);
 
     loadKeys = new uint64_t[NR_LOAD];

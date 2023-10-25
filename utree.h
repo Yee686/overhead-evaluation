@@ -806,7 +806,7 @@ btree::btree(int threadNum = 0){
 
   root = (char*)new page();
   list_head = (list_node_t *)alloc(sizeof(list_node_t));
-  list_head->next = NULL;
+  list_head->next = 0;
   height = 1; 
 }
 
@@ -917,11 +917,11 @@ retryinsert:
   }else{
     if(retry == 0){
       n = (list_node_t *)alloc(sizeof(list_node_t));
-      n->next = NULL;
+      n->next = 0;
       n->key = key;
       n->ptr = (uint64_t)right;
     }
-    if(list_head->next != NULL){
+    if(list_head->next != 0){
       if(prev == NULL)
         prev = list_head;
       

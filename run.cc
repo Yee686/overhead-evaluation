@@ -29,22 +29,39 @@ int main(int argc, char **argv){
         bt->insert(loadKeys[i], reinterpret_cast<char*>(loadKeys[i]));
     }
 
-    thread threads[threadNum];
+        thread threads[threadNum];
     int range = FLOOR(NR_OPERATIONS, threadNum);
     std::cout << "start run----------------------" << std::endl;
     struct timeval startTime, endTime;
     gettimeofday(&startTime, NULL);
+
     for(int t=0; t<threadNum; t++){
         threads[t] = thread([=](){
             worker_id = t+1;
             int start = range*t;
             int end = ((t<threadNum-1)?start+range:NR_OPERATIONS);
+            double t2 = 0.0;    // 总时间开销
             for (int ii = start; ii < end; ii++){
                 if(runTypes[ii] == 1)
+                {
+                    struct timeval insertStartTime, insertEndTime;
+                    gettimeofday(&insertStartTime, NULL);
+
                     bt->insert(runKeys[ii], reinterpret_cast<char *>(runKeys[ii]));
+
+                    gettimeofday(&insertEndTime, NULL);
+
+                    t2 += ((insertEndTime.tv_sec + (double)(endTime.tv_usec) / 1000000) - 
+                            (insertStartTime.tv_sec + (double)(startTime.tv_usec) / 1000000));
+                }
+                    
                 else
                     bt->search(runKeys[ii]);
             }
+            std::cout << "total insert time(t2): " << t2 << std::endl;
+            std::cout << "total search time(t1): " << t1 << std::endl;
+            std::cout << "total access persist device time(t2 - t1): " << t2 - t1 << std::endl;
+            std::cout << "rate: " << fixed << std::setprecision(6) << (t2 - t1) / t2 * 100 << "%" << std::endl;
         });
     }
 
@@ -54,6 +71,7 @@ int main(int argc, char **argv){
     double throughput = NR_OPERATIONS/((endTime.tv_sec + (double)(endTime.tv_usec) / 1000000) - (startTime.tv_sec + (double)(startTime.tv_usec) / 1000000));
     
     std::cout << "throughput: " << throughput << std::endl; 
+
 
     closeMemoryPool();
 }

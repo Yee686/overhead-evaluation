@@ -11,9 +11,11 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
+#include <iomanip>
+
 #define PAGE_SIZE 4096
 thread_local int worker_id = -1;
-static const uint64_t pool_size_set = (uint64_t)16 * 1024 * 1024 * 1024;
+static const uint64_t pool_size_set = (uint64_t)2 * 1024 * 1024 * 1024;
 
 class CLMemPool{
 public: 
@@ -81,7 +83,7 @@ public:
         size_t sizeOfPool = (pool_size/(threadNum+threadNum-2)/PAGE_SIZE)*PAGE_SIZE;
         m_pool_size = sizeOfPool*(threadNum+threadNum-2);
 
-        fd = open("/usr/yzy/overhead-evaluation/pmem", O_RDWR | O_CREAT);
+        fd = open("/home/7948lkj/yzy/overhead-evaluation/pmem", O_RDWR, 0666);
         if(fd == -1)
         {
             perror("error open file for pmem!");
@@ -133,7 +135,7 @@ void closeMemoryPool(){
 inline void persist(char *addr, int len){
     // 刷入SSD
     char* aligned_addr = (char*)(~((uintptr_t)0xFFF) & (uintptr_t)addr);
-    if(msync(aligned_addr, PAGE_SIZE, MS_SYNC) == -1)
+    if(msync(aligned_addr, len, MS_SYNC) == -1)
     {
         perror("error msync for pmem!");
         return;

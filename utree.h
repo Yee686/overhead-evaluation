@@ -19,6 +19,8 @@
 #define CACHE_LINE_SIZE 64 
 #define IS_FORWARD(c) (c % 2 == 0)
 
+double t1 = 0.0;  // 查找与插入开销
+
 using entry_key_t = int64_t;
 
 const uint64_t deletedSet = (uint64_t)1 << 63;
@@ -907,7 +909,17 @@ retryinsert:
     return;
   }
 
+  struct timeval startTime, endTime;
+  gettimeofday(&startTime, NULL);
+  
   cur = (list_node_t*)btree_search_pred_test(key, &hasFound, (char**)&prev, false, &testPage);
+  
+  gettimeofday(&endTime, NULL);
+
+  // 累计查找和插入时间
+  t1 += (endTime.tv_sec + (double)(endTime.tv_usec) / 1000000) - 
+        (startTime.tv_sec + (double)(startTime.tv_usec) / 1000000);
+
 
   if(cur){
     cur->acquireVersionLock();

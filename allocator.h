@@ -140,8 +140,6 @@ inline void persist(char *addr, int len){
         perror("error msync for pmem!");
         return;
     }
-    else
-        std::cout << "msync success!" << std::endl;
 }
 
 void *alloc(size_t size) {

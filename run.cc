@@ -1,7 +1,7 @@
 #include "utree.h"
 
-#define NR_LOAD         10000 //64000000
-#define NR_OPERATIONS   10000 //64000000
+#define NR_LOAD         640000 //64000000
+#define NR_OPERATIONS   640000 //64000000
 #define LOAD_YCSB      "insert1_zipfian_64M_load.dat"     
 #define RUN_YCSB       "insert1_zipfian_64M_run.dat"
 
@@ -40,7 +40,7 @@ int main(int argc, char **argv){
             worker_id = t+1;
             int start = range*t;
             int end = ((t<threadNum-1)?start+range:NR_OPERATIONS);
-            double t2 = 0.0;    // 总时间开销
+            double t2 = 0.0;    // 插入总时间开销
             for (int ii = start; ii < end; ii++){
                 if(runTypes[ii] == 1)
                 {
